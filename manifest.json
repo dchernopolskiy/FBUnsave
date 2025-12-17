@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FB Marketplace Saved Filter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Filter out sold and pending items from your Facebook Marketplace saved listings. Helps you focus on items that are still available.",
   "permissions": ["storage"],
   "host_permissions": [
