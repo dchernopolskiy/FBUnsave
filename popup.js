@@ -10,8 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearSearchBtn = document.getElementById('clearSearch');
   const matchPosition = document.getElementById('matchPosition');
   const loadAllBtn = document.getElementById('loadAllBtn');
+  const filterSection = document.getElementById('filterSection');
+  const searchTitle = document.getElementById('searchTitle');
+  const helpText = document.getElementById('helpText');
+  const navLink = document.getElementById('navLink');
 
   let isLoading = false;
+  let isMessengerPage = false;
 
   chrome.storage.sync.get(['hideSold', 'hidePending'], (result) => {
     hideSoldCheckbox.checked = result.hideSold !== false;
@@ -149,6 +154,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Detect which page we're on
+  async function detectPage() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0] && tabs[0].url) {
+        const url = tabs[0].url;
+        if (url && url.includes('messenger.com/marketplace')) {
+          isMessengerPage = true;
+          // Hide filter options on Messenger (they don't apply)
+          if (filterSection) {
+            filterSection.style.display = 'none';
+          }
+          // Update search title
+          if (searchTitle) {
+            searchTitle.textContent = 'Search Conversations';
+          }
+          // Update placeholder
+          searchInput.placeholder = 'Search conversations...';
+          // Update load button text
+          loadAllBtn.textContent = 'Load all conversations (scroll to bottom)';
+          // Update help text
+          if (helpText) {
+            helpText.innerHTML = '<strong>Tip:</strong> Click "Load all conversations" first to search through everything that\'s loaded!';
+          }
+          // Show link to Facebook Marketplace
+          if (navLink) {
+            navLink.textContent = '→ Search in Facebook Marketplace';
+            navLink.href = 'https://www.facebook.com/marketplace/you/saved';
+            navLink.style.display = 'inline-block';
+            navLink.target = '_blank';
+          }
+        } else if (url && url.includes('facebook.com/marketplace')) {
+          // On Facebook Marketplace - show link to Messenger
+          if (navLink) {
+            navLink.textContent = '→ Search Marketplace Conversations';
+            navLink.href = 'https://www.messenger.com/marketplace';
+            navLink.style.display = 'inline-block';
+            navLink.target = '_blank';
+          }
+        }
+      }
+    });
+  }
+
   async function restoreSearchState() {
     const stats = await sendToContent({ action: 'getStats' });
 
@@ -166,19 +214,28 @@ document.addEventListener('DOMContentLoaded', () => {
           searchNav.style.display = 'none';
         }
       } else if (stats.totalLoaded > 0) {
-        searchStatus.textContent = `${stats.totalLoaded} items loaded`;
+        const itemLabel = isMessengerPage ? 'conversations' : 'items';
+        searchStatus.textContent = `${stats.totalLoaded} ${itemLabel} loaded`;
       }
     } else {
-      chrome.storage.sync.get(['_searchQuery', '_searchIndex'], async (result) => {
-        if (result._searchQuery) {
-          searchInput.value = result._searchQuery;
+      const storageKeys = isMessengerPage ?
+        ['_messengerSearchQuery', '_messengerSearchIndex'] :
+        ['_searchQuery', '_searchIndex'];
+
+      chrome.storage.sync.get(storageKeys, async (result) => {
+        const query = isMessengerPage ? result._messengerSearchQuery : result._searchQuery;
+        const index = isMessengerPage ? result._messengerSearchIndex : result._searchIndex;
+
+        if (query) {
+          searchInput.value = query;
           const response = await sendToContent({
             action: 'restoreSearch',
-            query: result._searchQuery,
-            savedIndex: result._searchIndex || 0
+            query: query,
+            savedIndex: index || 0
           });
           if (response && response.matches > 0) {
-            searchStatus.textContent = `Found ${response.matches} match${response.matches !== 1 ? 'es' : ''} (${response.total} items loaded)`;
+            const itemLabel = isMessengerPage ? 'conversations' : 'items';
+            searchStatus.textContent = `Found ${response.matches} match${response.matches !== 1 ? 'es' : ''} (${response.total} ${itemLabel} loaded)`;
             searchStatus.classList.add('has-results');
             searchNav.style.display = 'flex';
             updateMatchPosition(response.currentIndex + 1, response.matches);
@@ -188,5 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  detectPage();
   restoreSearchState();
 });

@@ -182,13 +182,35 @@
     .footer a:hover {
       text-decoration: underline;
     }
+    .help-text {
+      font-size: 11px;
+      color: #65676b;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    .help-text strong {
+      color: #050505;
+    }
+    .nav-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #1877f2;
+      text-decoration: none;
+      padding: 6px 10px;
+      background: #e7f3ff;
+      border-radius: 6px;
+    }
+    .nav-link:hover {
+      background: #d0e7ff;
+    }
   </style>
 </head>
 <body>
   <h1>🔍 Marketplace Filter</h1>
 
   <div class="search-section">
-    <div class="section-title">Search Saved Items</div>
+    <div class="section-title" id="searchTitle">Search Saved Items</div>
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Search titles...">
       <button id="searchBtn">Search</button>
@@ -201,24 +223,30 @@
       <button id="clearSearch" style="margin-left: auto;">Clear</button>
     </div>
     <button class="load-all-btn" id="loadAllBtn">Load all items (scroll to bottom)</button>
+    <div class="help-text" id="helpText">
+      <strong>Tip:</strong> Click "Load all items" first to search through everything that's loaded!
+    </div>
+    <a href="#" class="nav-link" id="navLink" style="display: none;">→ Search in Messenger</a>
   </div>
 
-  <div class="section-title">Filter Options</div>
+  <div id="filterSection">
+    <div class="section-title">Filter Options</div>
 
-  <div class="option">
-    <label for="hideSold">Hide Sold Items</label>
-    <label class="toggle">
-      <input type="checkbox" id="hideSold" checked>
-      <span class="slider"></span>
-    </label>
-  </div>
+    <div class="option">
+      <label for="hideSold">Hide Sold Items</label>
+      <label class="toggle">
+        <input type="checkbox" id="hideSold" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
 
-  <div class="option">
-    <label for="hidePending">Hide Pending Items</label>
-    <label class="toggle">
-      <input type="checkbox" id="hidePending">
-      <span class="slider"></span>
-    </label>
+    <div class="option">
+      <label for="hidePending">Hide Pending Items</label>
+      <label class="toggle">
+        <input type="checkbox" id="hidePending">
+        <span class="slider"></span>
+      </label>
+    </div>
   </div>
 
   <div class="footer">

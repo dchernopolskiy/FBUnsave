@@ -451,7 +451,13 @@
   function nextMatch() {
     if (searchMatchIds.length === 0) return currentMatchIndex;
     currentMatchIndex = (currentMatchIndex + 1) % searchMatchIds.length;
-    highlightCurrentMatch();
+
+    // Re-apply all highlights first (in case elements were re-rendered)
+    setTimeout(() => {
+      highlightAllMatches();
+      highlightCurrentMatch();
+    }, 50);
+
     saveSearchState();
     return currentMatchIndex;
   }
@@ -459,7 +465,13 @@
   function prevMatch() {
     if (searchMatchIds.length === 0) return currentMatchIndex;
     currentMatchIndex = (currentMatchIndex - 1 + searchMatchIds.length) % searchMatchIds.length;
-    highlightCurrentMatch();
+
+    // Re-apply all highlights first (in case elements were re-rendered)
+    setTimeout(() => {
+      highlightAllMatches();
+      highlightCurrentMatch();
+    }, 50);
+
     saveSearchState();
     return currentMatchIndex;
   }

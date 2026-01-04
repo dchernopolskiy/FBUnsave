@@ -5,7 +5,8 @@
   "description": "Filter out sold and pending items from your Facebook Marketplace saved listings. Helps you focus on items that are still available.",
   "permissions": ["storage"],
   "host_permissions": [
-    "https://www.facebook.com/marketplace/*"
+    "https://www.facebook.com/marketplace/*",
+    "https://www.messenger.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -22,6 +23,13 @@
         "https://www.facebook.com/marketplace/you/saved*"
       ],
       "js": ["content.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://www.messenger.com/marketplace*"
+      ],
+      "js": ["messenger-marketplace.js"],
       "run_at": "document_end"
     }
   ],
