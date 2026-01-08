@@ -204,6 +204,75 @@
     .nav-link:hover {
       background: #d0e7ff;
     }
+    .price-section {
+      background: white;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+    .price-btn {
+      width: 100%;
+      padding: 10px;
+      background: #42b72a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .price-btn:hover {
+      background: #36a420;
+    }
+    .price-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .price-results {
+      margin-top: 12px;
+      font-size: 12px;
+    }
+    .price-drop {
+      background: #e7f3ff;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border-left: 3px solid #42b72a;
+    }
+    .price-increase {
+      background: #fff3cd;
+      padding: 8px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border-left: 3px solid #f7b928;
+    }
+    .price-item-title {
+      font-weight: 600;
+      color: #050505;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .price-change {
+      font-size: 11px;
+      color: #65676b;
+    }
+    .price-drop .price-change {
+      color: #42b72a;
+      font-weight: 600;
+    }
+    .price-increase .price-change {
+      color: #f7b928;
+      font-weight: 600;
+    }
+    .price-stats {
+      font-size: 11px;
+      color: #65676b;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e4e6eb;
+    }
   </style>
 </head>
 <body>
@@ -227,6 +296,12 @@
       <strong>Tip:</strong> Click "Load all items" first to search through everything that's loaded!
     </div>
     <a href="#" class="nav-link" id="navLink" style="display: none;">→ Search in Messenger</a>
+  </div>
+
+  <div class="price-section" id="priceSection">
+    <div class="section-title">Price Tracking</div>
+    <button class="price-btn" id="checkPricesBtn">Check for price changes</button>
+    <div class="price-results" id="priceResults" style="display: none;"></div>
   </div>
 
   <div id="filterSection">

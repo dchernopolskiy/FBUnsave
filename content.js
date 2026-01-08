@@ -74,6 +74,40 @@
     return null;
   }
 
+  // Extract item data from a card for price tracking
+  function extractItemData(card) {
+    const itemId = getCardItemId(card);
+    if (!itemId) return null;
+
+    const link = card.querySelector('a[href*="/marketplace/item/"]');
+    const url = link ? link.href : null;
+
+    // Extract title
+    const title = getCardTitle(card);
+
+    // Extract price - look for $XXX pattern
+    const priceMatch = card.textContent.match(/\$[\d,]+(\.\d{2})?/);
+    const priceStr = priceMatch ? priceMatch[0].replace(/[$,]/g, '') : null;
+    const price = priceStr ? parseFloat(priceStr) : null;
+
+    // Extract image URL
+    const img = card.querySelector('img');
+    const imageUrl = img ? img.src : null;
+
+    // Extract location if available
+    const locationMatch = card.textContent.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2})/);
+    const location = locationMatch ? locationMatch[1] : null;
+
+    return {
+      itemId,
+      title,
+      price,
+      url,
+      imageUrl,
+      location
+    };
+  }
+
   // Helper to find card element by item ID
   function findCardByItemId(itemId) {
     const links = document.querySelectorAll(`a[href*="/marketplace/item/${itemId}"]`);
@@ -543,6 +577,84 @@
     isAutoScrolling = false;
   }
 
+  // Price tracking functions
+  async function checkPrices() {
+    console.log('FBMF: Starting price check...');
+    const cards = findListingCards();
+    console.log(`FBMF: Found ${cards.length} cards to check`);
+
+    const updates = [];
+    const drops = [];
+    const increases = [];
+    const newItems = [];
+
+    // Verify price tracker is available (should be loaded via manifest)
+    if (typeof window.priceTracker === 'undefined') {
+      console.error('FBMF: priceTracker not available!');
+      throw new Error('Price tracker not loaded. Please reload the page.');
+    }
+
+    // Initialize the tracker
+    console.log('FBMF: Initializing tracker...');
+    try {
+      await window.priceTracker.init();
+      console.log('FBMF: Tracker initialized');
+    } catch (error) {
+      console.error('FBMF: Error initializing tracker:', error);
+      throw error;
+    }
+
+    for (const card of cards) {
+      const itemData = extractItemData(card);
+      if (!itemData || !itemData.price) {
+        console.log('FBMF: Skipping card - no item data or price');
+        continue;
+      }
+
+      console.log(`FBMF: Processing item ${itemData.itemId}: ${itemData.title} - $${itemData.price}`);
+
+      // Get previous data from DB
+      const existingItem = await window.priceTracker.getItem(itemData.itemId);
+
+      // Save the item
+      const savedItem = await window.priceTracker.saveItem(itemData);
+      updates.push(savedItem);
+
+      // Check for price changes
+      if (existingItem) {
+        const priceDiff = itemData.price - existingItem.currentPrice;
+        console.log(`FBMF: Previous price: $${existingItem.currentPrice}, difference: $${priceDiff}`);
+        if (priceDiff < 0) {
+          console.log(`FBMF: Price drop detected!`);
+          drops.push({
+            ...savedItem,
+            previousPrice: existingItem.currentPrice,
+            dropAmount: Math.abs(priceDiff)
+          });
+        } else if (priceDiff > 0) {
+          console.log(`FBMF: Price increase detected!`);
+          increases.push({
+            ...savedItem,
+            previousPrice: existingItem.currentPrice,
+            increaseAmount: priceDiff
+          });
+        }
+      } else {
+        console.log(`FBMF: New item`);
+        newItems.push(savedItem);
+      }
+    }
+
+    console.log(`FBMF: Price check complete. Drops: ${drops.length}, Increases: ${increases.length}, New: ${newItems.length}`);
+
+    return {
+      totalChecked: updates.length,
+      drops: drops,
+      increases: increases,
+      newItems: newItems
+    };
+  }
+
   // Listen for messages from popup
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'search') {
@@ -589,6 +701,13 @@
         currentIndex: currentMatchIndex,
         totalMatches: searchMatchIds.length
       });
+    } else if (request.action === 'checkPrices') {
+      checkPrices().then((result) => {
+        sendResponse(result);
+      }).catch((error) => {
+        sendResponse({ error: error.message });
+      });
+      return true; // Keep channel open for async response
     }
     return true;
   });

@@ -14,9 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchTitle = document.getElementById('searchTitle');
   const helpText = document.getElementById('helpText');
   const navLink = document.getElementById('navLink');
+  const checkPricesBtn = document.getElementById('checkPricesBtn');
+  const priceResults = document.getElementById('priceResults');
+  const priceSection = document.getElementById('priceSection');
 
   let isLoading = false;
   let isMessengerPage = false;
+  let isCheckingPrices = false;
 
   chrome.storage.sync.get(['hideSold', 'hidePending'], (result) => {
     hideSoldCheckbox.checked = result.hideSold !== false;
@@ -148,6 +152,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  checkPricesBtn.addEventListener('click', async () => {
+    if (isCheckingPrices) return;
+
+    isCheckingPrices = true;
+    checkPricesBtn.disabled = true;
+    checkPricesBtn.textContent = 'Checking prices...';
+    priceResults.style.display = 'none';
+
+    const response = await sendToContent({ action: 'checkPrices' });
+
+    isCheckingPrices = false;
+    checkPricesBtn.disabled = false;
+    checkPricesBtn.textContent = 'Check for price changes';
+
+    if (response && !response.error) {
+      displayPriceResults(response);
+    } else {
+      priceResults.innerHTML = '<div style="color: #f02849; font-size: 11px;">Error checking prices. Make sure you\'re on the saved items page.</div>';
+      priceResults.style.display = 'block';
+    }
+  });
+
+  function displayPriceResults(data) {
+    const { totalChecked, drops, increases, newItems } = data;
+
+    let html = '';
+
+    if (drops.length > 0) {
+      html += '<div style="font-weight: 600; margin-bottom: 6px; color: #42b72a;">Price Drops:</div>';
+      drops.forEach(item => {
+        const dropPercent = ((item.dropAmount / item.previousPrice) * 100).toFixed(0);
+        html += `
+          <div class="price-drop">
+            <div class="price-item-title">${escapeHtml(item.title)}</div>
+            <div class="price-change">
+              $${item.previousPrice.toFixed(2)} → $${item.currentPrice.toFixed(2)}
+              (-$${item.dropAmount.toFixed(2)}, ${dropPercent}% off)
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    if (increases.length > 0) {
+      html += '<div style="font-weight: 600; margin: 12px 0 6px 0; color: #f7b928;">Price Increases:</div>';
+      increases.forEach(item => {
+        const increasePercent = ((item.increaseAmount / item.previousPrice) * 100).toFixed(0);
+        html += `
+          <div class="price-increase">
+            <div class="price-item-title">${escapeHtml(item.title)}</div>
+            <div class="price-change">
+              $${item.previousPrice.toFixed(2)} → $${item.currentPrice.toFixed(2)}
+              (+$${item.increaseAmount.toFixed(2)}, +${increasePercent}%)
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    if (drops.length === 0 && increases.length === 0) {
+      html += '<div style="color: #65676b; font-size: 12px; text-align: center; padding: 8px;">No price changes detected</div>';
+    }
+
+    html += `
+      <div class="price-stats">
+        Checked ${totalChecked} item${totalChecked !== 1 ? 's' : ''} •
+        ${drops.length} drop${drops.length !== 1 ? 's' : ''} •
+        ${increases.length} increase${increases.length !== 1 ? 's' : ''} •
+        ${newItems.length} new
+      </div>
+    `;
+
+    priceResults.innerHTML = html;
+    priceResults.style.display = 'block';
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === 'loadProgress' && isLoading) {
       loadAllBtn.textContent = `Loading... ${request.count} items (click to stop)`;
@@ -161,9 +247,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = tabs[0].url;
         if (url && url.includes('messenger.com/marketplace')) {
           isMessengerPage = true;
-          // Hide filter options on Messenger (they don't apply)
+          // Hide filter options and price tracking on Messenger (they don't apply)
           if (filterSection) {
             filterSection.style.display = 'none';
+          }
+          if (priceSection) {
+            priceSection.style.display = 'none';
           }
           // Update search title
           if (searchTitle) {

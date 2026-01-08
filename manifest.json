@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "FB Marketplace Saved Filter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Filter out sold and pending items from your Facebook Marketplace saved listings. Helps you focus on items that are still available.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://www.facebook.com/marketplace/*",
     "https://www.messenger.com/*"
   ],
+  "web_accessible_resources": [{
+    "resources": ["price-tracker.js"],
+    "matches": ["https://www.facebook.com/*"]
+  }],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Marketplace Filter Settings",
@@ -22,7 +26,7 @@
       "matches": [
         "https://www.facebook.com/marketplace/you/saved*"
       ],
-      "js": ["content.js"],
+      "js": ["price-tracker.js", "content.js"],
       "run_at": "document_end"
     },
     {
